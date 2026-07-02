@@ -9,4 +9,6 @@ CHANGELOG 2
 
 # Environment secrets — never commit these
 Backend/.env
+frontend/.env
+.env
 .env.local
