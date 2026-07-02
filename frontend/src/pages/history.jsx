@@ -2,13 +2,9 @@ import React, { useContext, useEffect, useState } from 'react'
 import { AuthContext } from '../contexts/AuthContext'
 import { useNavigate } from 'react-router-dom';
 import Card from '@mui/material/Card';
-import Box from '@mui/material/Box';
-import CardActions from '@mui/material/CardActions';
 import CardContent from '@mui/material/CardContent';
-import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
 import HomeIcon from '@mui/icons-material/Home';
-
 import { IconButton } from '@mui/material';
 export default function History() {
 
@@ -20,13 +16,14 @@ export default function History() {
 
     const routeTo = useNavigate();
 
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     useEffect(() => {
         const fetchHistory = async () => {
             try {
                 const history = await getHistoryOfUser();
                 setMeetings(history);
-            } catch {
-                // IMPLEMENT SNACKBAR
+            } catch (err) {
+                console.error('Failed to fetch history:', err);
             }
         }
 
@@ -55,13 +52,8 @@ export default function History() {
             {
                 (meetings.length !== 0) ? meetings.map((e, i) => {
                     return (
-
-                        <>
-
-
-                            <Card key={i} variant="outlined">
-
-
+                        <React.Fragment key={i}>
+                            <Card variant="outlined">
                                 <CardContent>
                                     <Typography sx={{ fontSize: 14 }} color="text.secondary" gutterBottom>
                                         Code: {e.meetingCode}
@@ -72,12 +64,8 @@ export default function History() {
                                     </Typography>
 
                                 </CardContent>
-
-
                             </Card>
-
-
-                        </>
+                        </React.Fragment>
                     )
                 }) : <></>
 

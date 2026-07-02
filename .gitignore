@@ -1,2 +1,12 @@
 frontend/node_modules
 backend/node_modules
+Backend/node_modules
+
+# Personal reference files — not for repo
+CHANGELOG.md
+CHANGELOG 2
+*.changelog
+
+# Environment secrets — never commit these
+Backend/.env
+.env.local

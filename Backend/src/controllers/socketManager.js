@@ -4,12 +4,14 @@ let connections = {};
 let messages = {};
 let timeOnline = {};
 let socketToRoom = {};
+let usernames = {};  // tracks socketId -> username
 
 const removeSocketFromRoom = (socketId, io) => {
     const roomKey = socketToRoom[socketId];
     if (!roomKey || !connections[roomKey]) {
         delete socketToRoom[socketId];
         delete timeOnline[socketId];
+        delete usernames[socketId];
         return;
     }
 
@@ -30,6 +32,7 @@ const removeSocketFromRoom = (socketId, io) => {
 
     delete socketToRoom[socketId];
     delete timeOnline[socketId];
+    delete usernames[socketId];
 };
 
 export const connectToSocket = (server) => {
@@ -45,7 +48,8 @@ export const connectToSocket = (server) => {
     io.on("connection", (socket) => {
         console.log("SOMETHING CONNECTED");
 
-        socket.on("join-call", (path) => {
+        // join-call now accepts (path, username)
+        socket.on("join-call", (path, username) => {
             removeSocketFromRoom(socket.id, io);
 
             if (connections[path] === undefined) {
@@ -55,12 +59,20 @@ export const connectToSocket = (server) => {
             connections[path].push(socket.id);
             socketToRoom[socket.id] = path;
             timeOnline[socket.id] = new Date();
+            usernames[socket.id] = username || "Anonymous";
+
+            // Build username map for this room so every client knows all names
+            const roomUsernames = {};
+            connections[path].forEach((id) => {
+                roomUsernames[id] = usernames[id] || "Anonymous";
+            });
 
             for (let a = 0; a < connections[path].length; a++) {
                 io.to(connections[path][a]).emit(
                     "user-joined",
                     socket.id,
                     connections[path],
+                    roomUsernames,   // NEW: send full username map
                 );
             }
 

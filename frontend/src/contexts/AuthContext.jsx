@@ -45,7 +45,7 @@ export const AuthProvider = ({children})=>{
              {
                 localStorage.setItem("token",request.data.token);
                 setUserData({ username, token: request.data.token });
-                router("/");
+                router("/home");
                 return request.data;
              }
         }

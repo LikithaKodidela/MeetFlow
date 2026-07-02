@@ -1,7 +1,7 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useContext, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import io from "socket.io-client";
-import { Badge, IconButton, TextField } from "@mui/material";
+import { Badge, IconButton, TextField, Tooltip } from "@mui/material";
 import { Button } from "@mui/material";
 import VideocamIcon from "@mui/icons-material/Videocam";
 import VideocamOffIcon from "@mui/icons-material/VideocamOff";
@@ -12,7 +12,9 @@ import MicOffIcon from "@mui/icons-material/MicOff";
 import ScreenShareIcon from "@mui/icons-material/ScreenShare";
 import StopScreenShareIcon from "@mui/icons-material/StopScreenShare";
 import ChatIcon from "@mui/icons-material/Chat";
+import PushPinIcon from "@mui/icons-material/PushPin";
 import server from "../environment.js";
+import { AuthContext } from "../contexts/AuthContext.jsx";
 
 const server_url = server;
 var connections = {};
@@ -24,6 +26,9 @@ const peerConfigConnections = {
 const RemoteVideoTile = React.memo(function RemoteVideoTile({
   socketId,
   stream,
+  username,
+  pinned,
+  onPin,
 }) {
   const remoteVideoRef = useRef(null);
 
@@ -34,14 +39,25 @@ const RemoteVideoTile = React.memo(function RemoteVideoTile({
   }, [stream]);
 
   return (
-    <div className={styles.conferenceTile}>
-      <video
-        data-socket={socketId}
-        ref={remoteVideoRef}
-        autoPlay
-        playsInline
-      ></video>
-    </div>
+    <Tooltip title={pinned ? "Click to unpin" : "Click to pin"} placement="top">
+      <div
+        className={`${styles.conferenceTile} ${pinned ? styles.pinnedTile : ""}`}
+        onClick={onPin}
+        style={{ cursor: "pointer", position: "relative" }}
+      >
+        <video
+          data-socket={socketId}
+          ref={remoteVideoRef}
+          autoPlay
+          playsInline
+        ></video>
+        {/* Name badge */}
+        <div className={styles.nameBadge}>
+          {pinned && <PushPinIcon style={{ fontSize: 12, marginRight: 4 }} />}
+          {username || "Participant"}
+        </div>
+      </div>
+    </Tooltip>
   );
 });
 
@@ -65,6 +81,21 @@ export default function VideoMeet() {
   let [username, setUsername] = useState("");
   let [videos, setVideos] = useState([]);
   const videoRef = useRef([]);
+
+  // username map: { socketId -> displayName }
+  const [usernameMap, setUsernameMap] = useState({});
+  // pinned video: socketId of the video to spotlight
+  const [pinnedSocketId, setPinnedSocketId] = useState(null);
+
+  const authContext = useContext(AuthContext);
+
+  // Pre-fill username from logged-in account
+  useEffect(() => {
+    if (authContext?.userData?.username) {
+      setUsername(authContext.userData.username);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   let cleanupCallState = (resetState = true) => {
     if (socketRef.current) {
@@ -366,6 +397,7 @@ export default function VideoMeet() {
     }
   };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (video !== undefined && audio !== undefined) {
       getUserMedia();
@@ -431,7 +463,8 @@ export default function VideoMeet() {
     socketRef.current = io.connect(server_url, { secure: false });
     socketRef.current.on("signal", gotMessageFromServer);
     socketRef.current.on("connect", () => {
-      socketRef.current.emit("join-call", window.location.href);
+      // Pass username so others can see your name
+      socketRef.current.emit("join-call", window.location.pathname, username);
       socketIdRef.current = socketRef.current.id;
 
       socketRef.current.on("chat-message", addMessage);
@@ -447,9 +480,23 @@ export default function VideoMeet() {
           videoRef.current = updatedVideos;
           return updatedVideos;
         });
+
+        // Remove from username map and unpin if that user was pinned
+        setUsernameMap((prev) => {
+          const next = { ...prev };
+          delete next[id];
+          return next;
+        });
+        setPinnedSocketId((prev) => (prev === id ? null : prev));
       });
 
-      socketRef.current.on("user-joined", (id, clients) => {
+      // user-joined now receives (id, clients, roomUsernames)
+      socketRef.current.on("user-joined", (id, clients, roomUsernames) => {
+        // Update our local username map with everyone in the room
+        if (roomUsernames) {
+          setUsernameMap(roomUsernames);
+        }
+
         clients.forEach((socketListId) => {
           const connection = createPeerConnection(socketListId);
           attachLocalStreamToConnection(connection);
@@ -488,8 +535,9 @@ export default function VideoMeet() {
   };
 
   let sendMessage = () =>{
+    if (!message.trim()) return;
     socketRef.current.emit("chat-message",message,username);
-    setMessage(" ");
+    setMessage("");
   };
 
   let handleEndCall = () =>{
@@ -557,6 +605,7 @@ export default function VideoMeet() {
     }
   };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (screen !== undefined) {
       getDisplayMedia();
@@ -572,6 +621,10 @@ export default function VideoMeet() {
     if (videos.length <= 4) return styles.layoutMedium;
     if (videos.length <= 6) return styles.layoutLarge;
     return styles.layoutXLarge;
+  };
+
+  const handlePin = (socketId) => {
+    setPinnedSocketId((prev) => (prev === socketId ? null : socketId));
   };
 
   let handleChatToggle = () => {
@@ -701,27 +754,65 @@ export default function VideoMeet() {
             </Badge>
           </div>
 
-          <video
-            className={styles.meetUserVideo}
-            ref={localVideoRef}
-            autoPlay
-            muted
-            playsInline
-          ></video>
-
-          <div
-            className={`${styles.conferenceView} ${
-              showModal ? styles.conferenceViewWithChat : ""
-            } ${getConferenceLayoutClass()}`}
-          >
-            {videos.map((video) => (
-              <RemoteVideoTile
-                key={video.socketId}
-                socketId={video.socketId}
-                stream={video.stream}
-              />
-            ))}
+          {/* Local video with name label */}
+          <div className={styles.localVideoWrapper}>
+            <video
+              className={styles.meetUserVideo}
+              ref={localVideoRef}
+              autoPlay
+              muted
+              playsInline
+            ></video>
+            <div className={styles.nameBadgeLocal}>{username || "You"} (You)</div>
           </div>
+
+          {/* Pinned layout: one large + sidebar thumbnails */}
+          {pinnedSocketId ? (
+            <div className={`${styles.pinnedLayout} ${showModal ? styles.conferenceViewWithChat : ""}`}>
+              <div className={styles.pinnedMain}>
+                {videos.filter((v) => v.socketId === pinnedSocketId).map((v) => (
+                  <RemoteVideoTile
+                    key={v.socketId}
+                    socketId={v.socketId}
+                    stream={v.stream}
+                    username={usernameMap[v.socketId] || "Participant"}
+                    pinned={true}
+                    onPin={() => handlePin(v.socketId)}
+                  />
+                ))}
+              </div>
+              <div className={styles.pinnedSidebar}>
+                {videos.filter((v) => v.socketId !== pinnedSocketId).map((v) => (
+                  <RemoteVideoTile
+                    key={v.socketId}
+                    socketId={v.socketId}
+                    stream={v.stream}
+                    username={usernameMap[v.socketId] || "Participant"}
+                    pinned={false}
+                    onPin={() => handlePin(v.socketId)}
+                  />
+                ))}
+              </div>
+            </div>
+          ) : (
+            /* Normal grid layout */
+            <div
+              className={`${styles.conferenceView} ${
+                showModal ? styles.conferenceViewWithChat : ""
+              } ${getConferenceLayoutClass()}`}
+            >
+              {videos.map((v) => (
+                <RemoteVideoTile
+                  key={v.socketId}
+                  socketId={v.socketId}
+                  stream={v.stream}
+                  username={usernameMap[v.socketId] || "Participant"}
+                  pinned={false}
+                  onPin={() => handlePin(v.socketId)}
+                />
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>
