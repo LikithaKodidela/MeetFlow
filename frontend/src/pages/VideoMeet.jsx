@@ -703,11 +703,18 @@ export default function VideoMeet() {
                     className={styles.chatInput}
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
-                    id="outlined-basic"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        sendMessage();
+                      }
+                    }}
+                    id="chat-input"
                     label="Enter Your chat"
                     variant="outlined"
                     size="small"
                     fullWidth
+                    placeholder="Press Enter to send"
                   />
                   <Button
                     className={styles.chatSendButton}
@@ -754,8 +761,13 @@ export default function VideoMeet() {
             </Badge>
           </div>
 
-          {/* Local video with name label */}
-          <div className={styles.localVideoWrapper}>
+          {/* Local video — shifts left when chat is open so it never overlaps */}
+          <div
+            className={styles.localVideoWrapper}
+            style={showModal ? {
+              right: 'calc(min(360px, 32vw) + 16px)',
+            } : {}}
+          >
             <video
               className={styles.meetUserVideo}
               ref={localVideoRef}
