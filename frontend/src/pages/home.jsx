@@ -117,7 +117,9 @@ function HomeComponent() {
                                 borderRadius: '14px',
                                 padding: '20px',
                                 marginTop: '20px',
+                                width: '100%',
                                 maxWidth: '440px',
+                                boxSizing: 'border-box',
                             }}>
                                 <p style={{
                                     margin: '0 0 14px',
@@ -211,7 +213,7 @@ function HomeComponent() {
                         <p style={{ color: "#888", margin: '0 0 20px', fontSize: "0.9rem" }}>
                             Paste a meeting link or enter a code.
                         </p>
-                        <div style={{ display: 'flex', gap: '12px', maxWidth: 440 }}>
+                        <div style={{ display: 'flex', gap: '12px', maxWidth: 440, flexWrap: 'wrap' }}>
                             <TextField
                                 onChange={e => setMeetingCode(e.target.value)}
                                 onKeyDown={e => e.key === 'Enter' && handleJoinVideoCall()}

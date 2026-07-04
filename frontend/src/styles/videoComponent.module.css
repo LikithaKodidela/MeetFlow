@@ -434,3 +434,121 @@
     height: 100%;
     object-fit: cover;
 }
+
+/* ======================================================
+   Mobile responsive additions — 640px and below
+   ====================================================== */
+@media (max-width: 640px) {
+
+    /* ── Lobby ── */
+    .lobbyWrapper {
+        padding: 16px;
+        gap: 20px;
+    }
+
+    .lobbyPanel {
+        padding: 20px 16px;
+    }
+
+    .lobbyCopy h2 {
+        font-size: 1.5rem;
+    }
+
+    .lobbyControls {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .lobbyControls button {
+        min-width: 100%;
+    }
+
+    /* ── In-meeting: control bar ── */
+    .buttonContainers button svg {
+        font-size: 2rem;
+    }
+
+    /* ── Conference view — leave room for controls + local video ── */
+    .conferenceView {
+        padding: 8px 8px 140px;
+        gap: 8px;
+    }
+
+    /* ── Local video tile — smaller on mobile ── */
+    .localVideoWrapper {
+        width: 120px;
+        height: 80px;
+        bottom: 70px;
+        right: 10px;
+        border-radius: 10px;
+    }
+
+    /* ── Pinned layout: stack vertically on mobile ── */
+    .pinnedLayout {
+        flex-direction: column;
+        padding: 8px;
+        height: calc(100vh - 70px);
+        gap: 8px;
+    }
+
+    .pinnedMain {
+        flex: 1;
+        min-height: 50vh;
+    }
+
+    /* ── Sidebar becomes a horizontal scroll row at bottom ── */
+    .pinnedSidebar {
+        flex-direction: row;
+        width: 100%;
+        height: 90px;
+        overflow-x: auto;
+        overflow-y: hidden;
+        padding-right: 0;
+        padding-bottom: 4px;
+        flex-shrink: 0;
+    }
+
+    .pinnedSidebar .conferenceTile {
+        width: 130px;
+        height: 80px;
+        flex-shrink: 0;
+    }
+
+    /* ── Chat panel ── */
+    .chatRoom {
+        width: 100%;
+        height: 42vh;
+        top: auto;
+        bottom: 70px;
+        border-radius: 18px 18px 0 0;
+    }
+
+    .chatTitle {
+        font-size: 1.3rem;
+    }
+}
+
+/* ======================================================
+   Tablet responsive — 641px to 900px
+   ====================================================== */
+@media (min-width: 641px) and (max-width: 900px) {
+
+    .localVideoWrapper {
+        width: 150px;
+        height: 100px;
+        bottom: 76px;
+        right: 12px;
+    }
+
+    .buttonContainers button svg {
+        font-size: 2.4rem;
+    }
+
+    .pinnedSidebar {
+        width: 160px;
+    }
+
+    .pinnedSidebar .conferenceTile {
+        height: 100px;
+    }
+}
