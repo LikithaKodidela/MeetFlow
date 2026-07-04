@@ -46,7 +46,6 @@ export const connectToSocket = (server) => {
     });
 
     io.on("connection", (socket) => {
-        console.log("SOMETHING CONNECTED");
 
         // join-call now accepts (path, username)
         socket.on("join-call", (path, username) => {
@@ -110,7 +109,6 @@ export const connectToSocket = (server) => {
                     "socket-id-sender": socket.id,
                 });
 
-                console.log("message", matchingRoom, ":", sender, data);
 
                 connections[matchingRoom].forEach((participantId) => {
                     io.to(participantId).emit(
