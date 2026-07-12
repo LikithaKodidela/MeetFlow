@@ -45,7 +45,15 @@ export const AuthProvider = ({children})=>{
              {
                 localStorage.setItem("token",request.data.token);
                 setUserData({ username, token: request.data.token });
-                router("/home");
+
+                // If the user was trying to join a meeting before login, redirect there
+                const pendingMeeting = sessionStorage.getItem("pendingMeeting");
+                if (pendingMeeting) {
+                    sessionStorage.removeItem("pendingMeeting");
+                    router(`/${pendingMeeting}`);
+                } else {
+                    router("/home");
+                }
                 return request.data;
              }
         }
